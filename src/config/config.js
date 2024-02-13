@@ -40,6 +40,6 @@ export default {
     port: process.env.PORT,
     urlMongo: process.env.MONGO_URL,
     privatekey:process.env.PRIVATE_KEY,
-    adminName: process.env.ADMIN_NAME,
+    adminName: process.env.ADMIN_EMAIL,
     adminPassword: process.env.ADMIN_PASSWORD,
 }
