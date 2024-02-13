@@ -2,3 +2,4 @@ node_modules
 src/config/.env.development
 src/config/.env.local
 src/config/.env.production
+.env
