@@ -1,23 +1,14 @@
 import { Router } from "express";
 import __dirname from "../utils.js";
-import usersDao from "../controllers/users.controller.js";
+import usersDao from "../services/db/users.service.js";
 import { createHash, isValidPassword, generateJWToken, authToken } from '../utils.js'
 import {validateUsers} from "../utils/validateUsers.js";
 import passport from 'passport';
+import config from "../config/config.js";
 
 
 const router = Router();
 
-//Registro un usuario
-/* router.post('/register', 
-            passport.authenticate('register', {
-                failureRedirect: 'api/sessions/fail-register'
-            }),
-            validateUsers,  async(req,res) =>{
-                console.log("Registrando usuario");
-                console.log(req.body);
-                res.status(201).send({ status: "success", message: "Usuario creado con extito." });
-}) */
 /*=============================================
 =                   Passport Github           =
 =============================================*/
@@ -26,9 +17,8 @@ router.get("/github", passport.authenticate('github', { scope: ['user:email'] })
 })
 
 router.get("/githubcallback", passport.authenticate('github', { failureRedirect: '/github/error' }), async (req, res) => {
+    
     const user = req.user;
-    console.log("Objeto del usuario");
-    console.log(user);
     // Solo si utilizamos session
    /*  req.session.user = {
         name: `${user.first_name} ${user.last_name}`,
@@ -37,23 +27,32 @@ router.get("/githubcallback", passport.authenticate('github', { failureRedirect:
         role:user.role
     }; */
    // req.session.admin = true;
+   let tokenUser
    if(!user){
     console.warn(`User doesn't exist with username:${user.email}`);
     return res.status(204).send({ status: "Not found", error: "usuario no encontrado con el email:"+email});
     }
-    if (user.email ==='adminCoder@coder.com' || user.password ==='adminCod3r123'){
-
+    const ADMIN_NAME = config.adminName;
+    const ADMIN_PASSWORD =  config.adminPassword;
+    
+    if (user.email ===ADMIN_NAME || user.password ===ADMIN_PASSWORD){
+         tokenUser = {
+            name: `ADMIN`,
+            email: "admin@admin",
+            edad: 0,
+            role: "admin"
+        } 
     }else{
         /* if (!isValidPassword(user, user.password)){
             console.warn("Invalid credentials for user: " +user.email);
             return res.status(401).send({status:"error", error:"Invalid credentials"});
         }*/
-    } 
-    const tokenUser = {
-        name: `${user.first_name} ${user.last_name}`,
-        email: user.email,
-        edad: user.age,
-        role: user.role
+         tokenUser = {
+            name: `${user.first_name} ${user.last_name}`,
+            email: user.email,
+            edad: user.age,
+            role: user.role
+        } 
     }
         // IMplementamos jwt
     const access_token = generateJWToken(tokenUser);
@@ -66,7 +65,7 @@ router.get("/githubcallback", passport.authenticate('github', { failureRedirect:
         // 2do con Cookies
     res.cookie('jwtCookieToken', access_token,
         {
-            maxAge: 60000,
+            maxAge: 60*1000*10, //10 Minutos
             httpOnly: true //No se expone la cookie
             // httpOnly: false //Si se expone la cookie
         }
@@ -75,18 +74,19 @@ router.get("/githubcallback", passport.authenticate('github', { failureRedirect:
     
 
    //// fin jwt
-    res.redirect("/ghproducts")
+    //res.redirect("/ghproducts")
+    res.redirect("/products")
 })
 
 
 // Register de usuario de GitHub
-router.post('/register', passport.authenticate('register', {
+/* router.post('/register', passport.authenticate('register', {
     failureRedirect: '/api/sessions/fail-register'}), 
     async (req, res) => {
         console.log("Registrando usuario:");
         res.status(201).send({ status: "success", message: "Usuario creado con extito." });
 })
-
+ */
 //End Point para la falla del Registro
 router.get("/fail-register", (req, res) => {
     // console.log(res);

@@ -1,178 +1,71 @@
 import { Router } from "express";
 import { validateCart } from "../utils/validateCart.js";
 import __dirname from "../utils.js";
-import cartsDao from "../controllers/carts.controller.js";
+import CartService from "../services/db/carts.service.js";
+import CartDTO from "../services/dto/cart.dto.js"
 
 const router = Router();
 
+const cartService = new CartService;
+
 // Recuperar todos los carritos
-router.get('/', async (req,res) => {
+router.get('/', async (req, res) => {
     try {
-        const carts = await cartsDao.getAllCarts();
-        res.json(carts)
-    }
-    catch(error){
-        console.log(error);
-        res.status(400).json({
-            error: error
-        });
-    }
-})
-
-//Recupera un carrito
-router.get('/:pid', async (req, res) =>{
-    try{
-        let {pid} = req.params;
-        const cartBuscado = await cartsDao.getCartById(pid);
-            if (!cartBuscado){
-                return res.json({
-                    error:"El Carrito No Existe"
-                });
-            }
-            res.json({
-                cartBuscado
-            });
-    }catch(error){
-        console.log(error);
-            res.status(400).json({
-                error: error
-            });
-    }
-    });
-
-//Registrar un carrito
-router.post('/', validateCart , async (req, res) => {
-   // const {  product, quantity } = req.body;
-   console.log(req.body);
-    let products = {};
-    let cart = req.body;
-    try {
-        //cart.products = [{"_id": products, "quantity": quantity}]
-        const CartAdded = await cartsDao.createCart(cart);
-        res.json({
-                message: "Cart created",
-                CartAdded,
-              });
-        console.log("Cart creado:");
-        console.log(CartAdded);
-        }
-    catch (e) {
-      res.json({
-        error: e.message,
-      });
-    }
-});   
-
-//Registrar un producto a uncarrito
-router.post('/:cid/product/:pid', validateCart , async (req, res) => {
-    // const {  product, quantity } = req.body;
-    const {cid, pid} = req.params;
-     try {
-         //cart.products = [{"_id": products, "quantity": quantity}]
-        const CartAdded = await cartsDao.addProductToCart(cid, pid);
-         res.json({
-                 message: "Cart Update",
-                 CartAdded,
-               });
-         console.log("Cart Updated:");
-         console.log(CartAdded);
-         }
-     catch (e) {
-       res.json({
-         error: e.message,
-       });
-     }
- });   
-
-//Update Cart
-router.put('/:cid', validateCart, async(req, res) =>{
-    const cid = req.params.cid;    
-    let products = req.body.products;
-    let cart = {};
-   // cart._id = cid;
-    cart.products = products;
-    console.log(cart);
-
-    //  Rutina para consolidar productos
-        const consolidatedProducts = {};
-        cart.products.forEach(product => {
-            const productId = product.product;
-            if (consolidatedProducts[productId]) {
-            // El producto ya existe, suma la cantidad actual
-            consolidatedProducts[productId].quantity += product.quantity;
-            } else {
-            // Agrega una nueva entrada para el producto
-            consolidatedProducts[productId] = {
-                product: productId,
-                quantity: product.quantity
-            };
-            }
-        });
-        cart.products = Object.values(consolidatedProducts);
-        /// Fin consolidacion
-        try {
-
-            const cartAdded = await cartsDao.updateCart(cid, cart);
-            if (cartAdded){
-                res.json({
-                    message: "updated cart",
-                    cartAdded,
-                });
-            }
-            else
-            {
-                res.json({
-                error: "I cannot update the cart",
-                });
-            };
-        
-        } catch (e) {
-        res.json({
-            error: e.message,
-        });
-        }
-    });
-
-// Update quantity in cart
-router.put('/:cid/products/:pid' , async(req, res) => {
-    try{
-        const {cid, pid} = req.params;
-        const quantity = req.body.quantity||1;
-        const productUpdate = await cartsDao.updateProductInCart(cid, pid, quantity);
-        console.log(`productUpdate:${productUpdate}`);
-        res.json({productUpdate});
-    }
-    catch(error){
-        console.log(error);
-        res.json({
-            error:error
-        });
+        let carts = await cartService.getAll();
+        res.send(carts);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: error, message: "No se pudo obtener los carts." });
     }
 
 });
 
-// Delete all products in Cart
+//Registra un carrito
+router.post('/', validateCart , async (req, res) => {
+    try {
+        let newCart = new CartDTO(req.body);
+        let result = await cartService.save(newCart);
+        res.status(201).send(result);    
+    }catch (error) {
+        console.error(error);
+        res.status(500).send({ error: error, message: "No se pudo guardar el Cart." });
+    }
+});
+
+//Registrar un producto a uncarrito
+router.post('/:cid/product/:pid', validateCart , async (req, res) => {
+     try {
+        const {cid, pid} = req.params;
+        let cart = await cartService.findById(cid);
+        if (!cart){
+            res.status(500).send({  message: "No existe el carrito a actualizar." });
+        }
+        let result = await cartService.addProductToCart(cart, pid);
+        res.status(201).send(result);    
+     }catch (error) {
+        console.error(error);
+        res.status(500).send({ error: error, message: "No se pudo actualizar la cantidad del item en el Cart." });
+    }
+ });   
+
+// Delete Cart
 router.delete('/:cid', async (req,res) => {
     try{
         let {cid} = req.params;
         //const cartEliminado = await cartsDao.deleteCart(cid);
-        const cartEliminado = await cartsDao.deletePtoductsInCart(cid);
-        res.json({
-            cartEliminado
-        });
+        const result = await cartService.delete(cid);
+        res.status(204).send(result);    
     }
-    catch(error){
-        console.log(error);
-        res.json({
-            error:error
-        });
+    catch (error) {
+        console.error(error);
+        res.status(500).send({ error: error, message: "No se pudo eliminar el carrito." });
     }
 
 })   
 
 //eliminar del carrito el producto seleccionado
 //DELETE api/carts/:cid/products/:pid 
-router.delete('/:cid/products/:pid', async(req, res) => {
+/* router.delete('/:cid/products/:pid', async(req, res) => {
     try{
         const {cid, pid } = req.params;
         console.log(`cid${cid}`);
@@ -189,7 +82,7 @@ router.delete('/:cid/products/:pid', async(req, res) => {
         });
     }
     
-});
+}); */
 
 export default router;  
 

@@ -1,56 +1,37 @@
 import { Router } from "express";
 import { validateProduct } from "../utils/validateProduct.js";
 import __dirname from "../utils.js";
-import productsDao from "../controllers/products.controller.js";
+import ProductService from "../services/db/products.service.js";
+import ProductDTO from "../services/dto/product.dto.js"
 
 const router = Router();
 
+const productService = new ProductService();
+
 //Recuperar todos los productos
-router.get("/", async (req, res) => {
-    try { 
-        const products = await productsDao.getAllProducts(req.query);
-        res.json(products);
-    }catch(error){
-        console.log(error);
-        res.status(400).json({
-            error: error
-        });
-    }  
-  });
-
-
-
-/* //Recuperar un producto por titulo
-//[a-zA-Z\s%C3%A1%C3%A9%20]+
-//[a-zA-Z%C3%A1%C3%A9%20]+
-router.get("/:word([a-zA-Z0-9%C3%A1%C3%A9%20]+)", async (req, res) => {
+router.get('/', async (req, res) => {
     try {
-        console.log("Producto despues de la busqueda!!");
-        //const products = await productsDao.findByName(req.params.word)
-        console.log(req.product);
-        const products = req.product
-        if (!products) {
-            res.status(202).send({ message: "No product found" });
-            throw new Error('No product found');
-        }
-        res.json(products)
+        let products = await productService.getAll();
+        res.send(products);
     } catch (error) {
         console.error(error);
+        res.status(500).send({ error: error, message: "No se pudo obtener los productos." });
     }
-}); */
+
+})
 
 // Recuperar un producto por ID
 router.get('/:pid', async (req, res) =>{
     try{
         let {pid} = req.params;
-        const productoBuscado = await productsDao.getProductById(pid);
-            if (!productoBuscado){
+        const result = await productService.findById(pid);
+            if (!result){
                 return res.json({
                     error:"El Producto No Existe"
                 });
             }
             res.json({
-                productoBuscado
+                result
             });
     }catch(error){
         console.log(error);
@@ -62,68 +43,27 @@ router.get('/:pid', async (req, res) =>{
 
 //REgistrar Producto
 router.post('/', validateProduct , async (req, res) => {
-    const {  title, description, code, price, status, stock, category, thumbnail } = req.body;
-    let product = {};
     try {
-        product.title = title;
-        product.description = description;
-        product.code = code;
-        product.price = price;
-        product.status = status;
-        product.stock = stock;
-        product.category = category;
-        product.thumbnail = thumbnail;
-        const ProductAdded = await productsDao.createProduct(product);
-        res.json({
-                message: "product created",
-                ProductAdded,
-              });
-        console.log("Producto creado:");
-        console.log(ProductAdded);
-        }
-    catch (e) {
-      res.json({
-        error: e.message,
-      });
+        let newProduct = new ProductDTO(req.body);
+        let result = await productService.save(newProduct);
+        res.status(201).send(result);    
+    }catch (error) {
+        console.error(error);
+        res.status(500).send({ error: error, message: "No se pudo guardar el producto." });
     }
 });
 
 //Updte Product
 router.put('/:pid', validateProduct, async(req, res) =>{
-    const pid = req.params.pid;
     
-    const { title, description, code, price, status, stock, category,thumbnail} = req.body;
-    
-    const product = {
-        title,
-        description,
-        code,
-        price,
-        status,
-        stock,
-        category,
-        thumbnail,
-      };
-
     try {
-        const ProductAdded = await productsDao.updateProduct(pid, product);
-        if (ProductAdded){
-            res.json({
-                message: "updated product",
-                ProductAdded,
-              });
-        }
-        else
-        {
-            res.json({
-             error: "I cannot update the product",
-            });
-        };
-      
-    } catch (e) {
-      res.json({
-        error: e.message,
-      });
+        const pid = req.params.pid;
+        let newProduct = new ProductDTO(req.body);
+        let result = await productService.update(pid,newProduct);
+        res.status(201).send(result); 
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ error: error, message: "No se pudo Actualizar el producto." });
     }
 });
 
@@ -131,16 +71,12 @@ router.put('/:pid', validateProduct, async(req, res) =>{
 router.delete('/:pid', async (req,res) => {
     try{
         let {pid} = req.params;
-        const productoEliminado = await productsDao.deleteProduct(pid);
-        res.json({
-            productoEliminado
-        });
+        const result = await productService.delete(pid);
+        res.status(201).send(result); 
     }
-    catch(error){
-        console.log(error);
-        res.json({
-            error:error
-        });
+    catch (error) {
+        console.error(error);
+        res.status(500).send({ error: error, message: "No se pudo Eliminar el producto." });
     }
 
 })
@@ -152,7 +88,7 @@ router.delete('/:pid', async (req,res) => {
 /* router.param("word", async (req, res, next, name) => {
     console.log("Buscando título de producto, valor: " + name);
     try {
-        let result = await productsDao.findByName(name);
+        let result = await ProductService.findByName(name);
         if (!result) {
             req.product = null;
             throw new Error('No products found');

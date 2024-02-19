@@ -1,6 +1,7 @@
 import passport from 'passport';
 //import userModel from '../models/user.model.js';
-import usersDao from "../controllers/users.controller.js";
+import usersDao from "../services/db/users.service.js";
+import UsertDTO from "../services/dto/user.dto.js";
 import GitHubStrategy from "passport-github2";
 import jwtStrategy from 'passport-jwt';
 import passportLocal from 'passport-local';
@@ -30,8 +31,8 @@ const initializePassport = () => {
         }, async (jwt_payload, done) => {
             console.log("Entrando a passport Strategy con JWT.");
             try {
-             //   console.log("JWT obtenido del Payload");
-             //   console.log(jwt_payload);
+                console.log("JWT obtenido del Payload");
+                console.log(jwt_payload);
                 return done(null, jwt_payload.user)
             } catch (error) {
                 console.log("Error JWT.");
@@ -48,15 +49,15 @@ const initializePassport = () => {
             callbackUrl: `http://localhost:${PORT}/api/sessions/githubcallback`
         },
         async (accessToken, refreshToken, profile, done) => {
-            console.log("Profile obtenido del usuario de GitHub: ");
-            // console.log(profile);
+           // console.log("Profile obtenido del usuario de GitHub: ");
+           // console.log(profile);
             try {
                 //Validamos si el user existe en la DB
                 const email = profile._json.email
                 //const user = await userSevice.getUserbyEmail(email);
                 const user = await userService.findByUsername(email);
-                console.log("Usuario encontrado en github para login:");
-                // console.log(user);
+              //  console.log("Usuario encontrado en github para login:");
+              //  console.log(user);
                 if (!user) {
                     console.warn("User doesn't exists with username: " + profile._json.email);
                     let newUser = {
@@ -72,7 +73,15 @@ const initializePassport = () => {
                     return done(null, result)
                 } else {
                     // Si entramos por aca significa que el user ya existe en la DB
-                    return done(null, user)
+                    if (user.loggedBy !="GitHub"){
+                        //El  usuario  existe en la BD pero no es de guthub
+                        console.log("El  usuario  existe en la BD pero no es de guthub");
+                        return done(null, false ,{ message: 'El  usuario  existe en la BD pero no es de guthub' } )
+                    }else{
+                        // El usuario existe y es de GitHub
+                        console.log("El usuario existe y es de GitHub");
+                        return done(null, user)
+                    }
                 }
 
             } catch (error) {
@@ -88,6 +97,7 @@ const initializePassport = () => {
         { passReqToCallback: true, usernameField: 'email' },
         async (req, username, password, done) => {
             const { first_name, last_name, email, age } = req.body;
+            const newUser = new UsertDTO(req.body);
             try {
                 //Validamos si el user existe en la DB
                 const exist = await userService.findByUsername( email);
@@ -118,6 +128,7 @@ const initializePassport = () => {
 
     //Funciones de Serializacion y Desserializacion
     passport.serializeUser((user, done) => {
+        //console.log(user);
         done(null, user._id);
     });
 
@@ -136,10 +147,10 @@ const cookieExtractor = req => {
     // console.log("Entrando a Cookie Extractor");
     if (req && req.cookies) {//Validamos que exista el request y las cookies.
         console.log("Cookies presentes: ");
-       // console.log(req.cookies);
+        console.log(req.cookies);
         token = req.cookies['jwtCookieToken']
-       // console.log("Token obtenido desde Cookie:");
-       // console.log(token);
+        console.log("Token obtenido desde Cookie:");
+        console.log(token);
     }
     return token;
 };

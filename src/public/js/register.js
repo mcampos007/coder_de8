@@ -10,7 +10,7 @@ form.addEventListener('submit', e => {
     data.forEach((value, key) => obj[key] = value)
 
     // Usamos Fetch
-    fetch('/api/sessions/register', {
+    fetch('/api/users/', {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: {

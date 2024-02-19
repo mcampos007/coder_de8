@@ -1,4 +1,4 @@
-import { messageModel } from "../models/messages.model.js";
+import { messageModel } from "./models/messages.model.js";
 
 class MessageDao {
     async getAllMessages(){

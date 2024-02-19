@@ -1,6 +1,6 @@
 import { Router } from "express";
 import __dirname from "../utils.js";
-import messagesDao from "../controllers/messages.controller.js";
+import messagesDao from "../services/db/messages.service.js";
 
 const router = Router();
 

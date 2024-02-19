@@ -31,6 +31,4 @@ process.on("message", message => {
     console.log(`Mensaje recibido: ${message}`);
 });
  
-
-
 export default program;

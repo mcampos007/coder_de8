@@ -2,8 +2,8 @@ import { Router } from "express";
 import cookieParser from 'cookie-parser'
 import session from "express-session";
 import userModel from "../routes/users.routes.js"
-import usersDao from "../controllers/users.controller.js";
-import productsDao from "../controllers/products.controller.js";
+import usersDao from "../services/db/users.service.js";
+import ProductService from "../services/db/products.service.js";
 import { authToken, passportCall, authorization } from "../utils.js";
 //import {PRIVATE_KEY} from "../config/.env.js";
 import config from "..//config/config.js";
@@ -108,13 +108,14 @@ router.get('/register', (req, res) => {
         'users/register',
         data    
     )
-});
+}); 
 
 //Ejmplo de llamado a la ruta get para productos con jwt
 router.get('/products',  passport.authenticate('current', {session: false}), async (req, res) => {
     try {
         const parametros  = {};
-        const products = await productsDao.getAllProducts(parametros);
+        const productService = new ProductService();
+        const products = await productService.getAll();// productsDao.getAllProducts(parametros);
         // console.log("Products");
         // console.log(products);
         // console.log("Req user");
@@ -138,7 +139,7 @@ router.get('/products',  passport.authenticate('current', {session: false}), asy
 
 });
 
-//Ejmplo de llamado a la ruta get para productos con github
+/* //Ejmplo de llamado a la ruta get para productos con github
 router.get('/ghproducts', async (req, res) => {
     try {
         const parametros = req.query; 
@@ -157,7 +158,7 @@ router.get('/ghproducts', async (req, res) => {
         //res.status(500).json({ error: 'Hubo un error al Recuperar Products.' });    
         return  res.render('errors', { message: 'Hubo un error al Recuperar Products.' });
     }
-})
+}) */
 
 
 router.get('/passwordreset', (req, res) => {

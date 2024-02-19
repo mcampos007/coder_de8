@@ -1,60 +1,43 @@
 import { Router } from "express";
-//import { validateCart } from "../utils/validateCart.js";
+import { validateUser } from "../utils/validateUser.js";
 import __dirname from "../utils.js";
-//import cartsDao from "../daos/dbManager/carts.dao.js";
-import usersDao from "../controllers/users.controller.js";
+import UserService from "../services/db/users.service.js";
+import UsertDTO from "../services/dto/user.dto.js"
 import { createHash, isValidPassword } from '../utils.js'
 
-
 const router = Router();
+
+const userService = new UserService();
 
 //Recuperar todos los usuarios
 router.get('/', async(req,res) => {
     try{
-        const users = await usersDao.getAllUsers();
-        res.json(users);
-    }
-    catch(error){
+        let users = await userService.getAll();
+        res.send(users);
+    }catch(error){
         console.log(error);
-        res.status(400).json()
+        res.status(500).send({ error: error, message: "No se pudo obtener los usuario." });
     }
 });
 
 //Crear un usuario
-router.post('/', async(req,res) =>{
-    console.log(req.body);
-    const { first_name, last_name, email, age, password } = req.body;
-    //algunas validaciones y encriptado del pass
-     //Validamos si el user existe en la DB
-    const exist = await usersDao.getUserbyEmail(email);
-     if (exist) {
-         return res.status(400).send({ status: 'error', message: "Usuario ya existe!" })
-    }
-    
-    const user = {
-        first_name,
-        last_name,
-        email,
-        age,
-        // password //se encriptara despues...
-        password: createHash(password)
-    }
- 
-    try{
-        const userAdded = await usersDao.createUser(user);
-        /* res.json({
-            message:"User created",
-            userAdded,
-        }); */
-        console.log(`Usuario creado ${userAdded}`);
-        res.redirect('/');
-       
-    }
-    catch(error) {
-        res.status(400).send({error:error.message})
-    }
-
-
+router.post('/', validateUser, async(req,res) =>{
+    try {
+        let newUser = new UsertDTO(req.body);
+        newUser.password = createHash(newUser.password);
+        newUser.loggedBy = "form";
+        const userExist = await userService.findByUsername(newUser.email);
+        if (userExist){
+            //el usuario ya existe
+            res.status(400).send({  message: "El usuario ya existe en la base de datos." });    
+        }else{
+            const result = await userService.save(newUser);
+            res.status(201).send(result); 
+        } 
+    }catch(error){
+        console.log(error);
+        res.status(500).send({ error: error, message: "Error al crear el usuario." });
+    } 
 })
 
 //Login del usuario

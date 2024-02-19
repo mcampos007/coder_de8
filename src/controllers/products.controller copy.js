@@ -1,4 +1,4 @@
-import  {product}  from "../models/products.model.js";
+import  {product}  from "../services/db/models/products.model.js";
 import mongoose from "mongoose";
 
 class ProductDao {

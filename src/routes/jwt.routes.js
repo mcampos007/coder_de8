@@ -1,6 +1,6 @@
 import { Router } from "express";
 import __dirname from "../utils.js";
-import usersDao from "../controllers/users.controller.js";
+import usersDao from "../services/db/users.service.js";
 import { createHash, isValidPassword, generateJWToken, authToken } from '../utils.js'
 //import { generateJWToken, authToken } from '../utils.js';
 import {validateUsers} from "../utils/validateUsers.js";

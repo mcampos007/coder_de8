@@ -1,5 +1,5 @@
 import CustomRouter from './custom.router.js';
-import UserService from '../../controllers/users.controller.js';
+import UserService from '../../services/db/users.service.js';
 import { createHash, isValidPassword, generateJWToken } from '../../utils.js';
 import config from '../../config/config.js';
 
@@ -79,7 +79,7 @@ export default class UsersExtendRouter extends CustomRouter {
                 const access_token = generateJWToken(tokenUser);
                 res.cookie('jwtCookieToken', access_token,
                 {
-                    maxAge: 60000,
+                    maxAge: 10*60*1000,
                     httpOnly: true //No se expone la cookie
                     // httpOnly: false //Si se expone la cookie
                 }

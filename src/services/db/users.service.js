@@ -1,4 +1,4 @@
-import userModel from "../models/users.model.js";
+import userModel from "./models/users.model.js";
 import mongoose, { Mongoose, Types  } from 'mongoose';
 
 export default class UserDao {
