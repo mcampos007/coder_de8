@@ -116,8 +116,8 @@ router.get('/products',  passport.authenticate('current', {session: false}), asy
         const parametros  = {};
         const productService = new ProductService();
         const products = await productService.getAll();// productsDao.getAllProducts(parametros);
-        // console.log("Products");
-        // console.log(products);
+         console.log("Products");
+         console.log(products);
         // console.log("Req user");
         // console.log(req.user);
         const data ={ 

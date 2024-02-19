@@ -7,7 +7,8 @@ export default class ProductDao {
   }
   
   getAll = async () => {
-    let products = await productsModel.find() ;
+   // let products = await productsModel.find() ;
+    let products = await productsModel.paginate() ;
     return products;
   };
   
